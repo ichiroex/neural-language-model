@@ -107,6 +107,9 @@ def load_src_data(fname, vocab_size):
     with open(fname, "r") as f:
         # ファイルを一行ずつ渡す
         for line in f:
+
+            line = line.strip()
+
             # 空白の行は無視
             if len(line) == 0:
                 continue
