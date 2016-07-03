@@ -256,7 +256,7 @@ def train(args):
 
             k = 0
             for hyp in hyp_batch:
-                _src = [src_id2vocab[x] for x in src_batch[k]]
+                _src = [src_id2vocab[x] if src_id2vocab[x] != "</s>" else "" for x in src_batch[k]]
                 _hyp = [src_id2vocab[x] if src_id2vocab[x] != "</s>" else "" for x in hyp]
                 print 'src:', ' '.join( _src )
                 print 'hyp:', ' '.join( _hyp )
