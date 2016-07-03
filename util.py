@@ -101,36 +101,24 @@ def load_src_data(fname, vocab_size):
 
     print fname
 
-    numeric_data_list = []  # 全事例の数値を格納
-    symbolic_data_list = [] # 全事例のシンボルを格納
-    symbol_freq = defaultdict(lambda: 0) # 各シンボルの出現回数計算用
+    sentence_list = []
+    word_freq = defaultdict(lambda: 0) # 各シンボルの出現回数計算用
 
     with open(fname, "r") as f:
         # ファイルを一行ずつ渡す
         for line in f:
-            numeric_line, symbolic_line = line.split("|")
+            # 空白の行は無視
+            if len(line) == 0:
+                continue
 
-            numeric_data = [ [ float(n) if str_isfloat(n) else None for n in ne.split(",")] for ne in numeric_line.split("\t") ]
-            symbolic_data = [ s.strip()  for se in symbolic_line.split("\t") for s in se.split(",") ]
-
-            # 数値データをリストに格納
-            numeric_data_list.append(numeric_data)
-
-            # シンボルデータをリストに格納
-            symbolic_data_list.append(symbolic_data)
+            # 単語分割
+            word_list = line.split()
+            sentence_list.append(word_freq)
 
             # 各シンボルの出現回数を数える
-            for symbol in symbolic_data:
-                symbol_freq[symbol] += 1
+            for word in word_list:
+                word_freq[word] += 1
 
-    # 数値データを標準化
-    #numeric_data_list = standardization(numeric_data_list)
-
-    # padding
-    #numeric_dataset = [padding(data_list) for data_list in numeric_data_list]
-
-    #標準化+padding済みのデータを読み込んだので、そのまま入れる
-    numeric_dataset = numeric_data_list
 
     # 単語-ID、ID-単語 辞書を作成
     vocab2id = defaultdict(lambda: 0)
@@ -143,66 +131,17 @@ def load_src_data(fname, vocab_size):
     id2vocab[1] = '<s>'
     id2vocab[2] = '</s>'
 
-    # シンボル辞書を作成
-    for i, (symbol, count) in zip(range(vocab_size - 3), sorted(symbol_freq.items(), key=lambda x:-x[1])):
-        vocab2id[symbol] += i + 3
-        id2vocab[i + 3]  += symbol
-
-    # id化したシンボルデータセット
-    symbolic_dataset = [ [ vocab2id.get(symbol, vocab2id["<unk>"]) for symbol in symbolic_data ] for symbolic_data in symbolic_data_list ]
-
-    print 'dataset size', len(symbolic_dataset)
-    print 'symbol vocab size:', len(vocab2id)
-    print 'symbol vocab size(actual):', len(symbol_freq)
-    print
-
-    return np.array(numeric_dataset), np.array(symbolic_dataset), vocab2id, id2vocab
-
-# input data
-def load_trg_data(fname, vocab_size):
-
-    """
-    ターゲットファイルを読み込み、データセット, 単語辞書を返す
-    語彙数を指定する
-    """
-
-    print fname
-    lines = open(fname, 'r').readlines()
-
-    # 単語リストと文頭・文末文字を追加した文書リストを作成
-    words = []
-    doc   = []
-    word_freq = defaultdict(lambda: 0)
-    for line in lines:
-        sentence = line.strip().split()
-        doc.append(sentence)
-        words.extend(sentence)
-
-        # 単語の出現回数を計算
-        for word in sentence:
-            word_freq[word] += 1
-
-    # 単語-ID、ID-単語 辞書を作成
-    vocab2id = defaultdict(lambda: 0)
-    vocab2id['<unk>'] = 0
-    vocab2id['<s>'] = 1
-    vocab2id['</s>'] = 2
-
-    id2vocab = [""] * vocab_size
-    id2vocab[0] = '<unk>'
-    id2vocab[1] = '<s>'
-    id2vocab[2] = '</s>'
-
+    # 辞書を作成
     for i, (word, count) in zip(range(vocab_size - 3), sorted(word_freq.items(), key=lambda x:-x[1])):
-        vocab2id[word] = i + 3
-        id2vocab[i + 3] = word
+        vocab2id[word] += i + 3
+        id2vocab[i + 3]  += word
 
-    dataset = [[ vocab2id.get(word, 0) for word in sen ] for sen in doc] # 各事例をindex系列に置き換える
+    # id化したデータセット
+    dataset = [ [ vocab2id.get(word, vocab2id["<unk>"]) for word in word_list ] for word_list in sentence_list ]
 
     print 'dataset size', len(dataset)
-    print 'corpus length:', len(words)
-    print 'vocab size:', len(vocab2id)
-    print 'vocab size(actual):', len(word_freq)
+    print 'symbol vocab size:', len(vocab2id)
+    print 'symbol vocab size(actual):', len(symbol_freq)
     print
 
     return np.array(dataset), vocab2id, id2vocab
