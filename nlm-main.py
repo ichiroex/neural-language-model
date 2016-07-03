@@ -211,6 +211,8 @@ def train(args):
     print 'loading training data...'
     src_dataset, src_vocab2id, src_id2vocab = util.load_src_data(args.src, vocab_size)
 
+    sample_size = len(src_dataset)
+
     # debug modeの時, パラメータの確認
     if args.is_debug_mode:
         print "[PARAMETERS]"

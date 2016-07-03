@@ -141,7 +141,7 @@ def load_src_data(fname, vocab_size):
 
     print 'dataset size', len(dataset)
     print 'symbol vocab size:', len(vocab2id)
-    print 'symbol vocab size(actual):', len(symbol_freq)
+    print 'symbol vocab size(actual):', len(word_freq)
     print
 
     return np.array(dataset), vocab2id, id2vocab
