@@ -52,8 +52,8 @@ def argument_parser():
     def_model = "encdec"
 
     # Model parameter
-    def_vocab = 1000
-    def_embed = 100
+    def_vocab = 5000
+    def_embed = 300
     def_hidden = 200
 
     # Other parameter
@@ -129,52 +129,33 @@ def argument_parser():
 
 
 def forward_one_step(model,
-                     src_num_batch,
-                     src_sym_batch,
-                     trg_batch,
+                     src_batch,
                      src_vocab2id,
-                     trg_vocab2id,
                      is_train,
                      xp):
     """ 損失を計算
     """
     generation_limit = 256
-    batch_size = len(src_num_batch)
-    model.reset(batch_size) # 状態をリセット
+    batch_size = len(src_batch)
 
-    # CNN Encoder
-    num_x = Variable(xp.asarray(src_num_batch, dtype=xp.float32))
-    model.cnn_encode(num_x)
-    """
-    # LSTM-RNN Encoder
-    sym_x = Variable(xp.asarray([src_vocab2id['</s>'] for _ in range(batch_size)], dtype=xp.int32))
-    model.rnn_encode(sym_x)
-    src_sym_batch = xp.asarray(src_sym_batch, dtype=xp.int32).T # 転置
-    for batch in reversed(src_sym_batch):
-        sym_x = Variable(batch) #source
-        model.rnn_encode(sym_x)
-
-
-    model.concat_state()
-    """
-    # LSTM-RNN Decoder
-    #print "Decoder..."
-    t = Variable(xp.asarray([trg_vocab2id['<s>'] for _ in range(batch_size)], dtype=xp.int32))
     hyp_batch = [[] for _ in range(batch_size)]
 
-    #print t.data
     # Train
     if is_train:
 
         loss = Variable(xp.asarray(xp.zeros(()), dtype=xp.float32))
-        trg_batch = xp.asarray(trg_batch, dtype=xp.int32).T # 転置
+        src_batch = xp.asarray(src_batch, dtype=xp.int32).T # 転置
 
-        for batch in trg_batch:
-            y = model.decode(t)
+        print src_batch
+        for batch in src_batch:
+            x = Variable(batch) #source
             t = Variable(batch) #target
-            #print t.data
+
+            y = model(x)
+
             loss += F.softmax_cross_entropy(y, t)
             output = cuda.to_cpu(y.data.argmax(1))
+
             for k in range(batch_size):
                 hyp_batch[k].append(output[k])
 
@@ -245,7 +226,6 @@ def train(args):
     optimizer.add_hook(chainer.optimizer.GradientClipping(grad_clip))
 
 
-    """
     # 学習の始まり
     for epoch in range(n_epoch):
         print 'epoch:', epoch, '/', n_epoch
@@ -254,56 +234,29 @@ def train(args):
         perm = np.random.permutation(N) #ランダムな整数列リストを取得
         sum_train_loss = 0.0
 
-        j = 0
         for i in six.moves.range(0, N, batchsize):
 
             #perm を使い x_train, y_trainからデータセットを選択 (毎回対象となるデータは異なる)
-            src_num_batch = src_num_dataset[perm[i:i + batchsize]]
-            src_sym_batch = src_sym_dataset[perm[i:i + batchsize]]
-
-            # 出力用のソースバッチ
-            src_raw_num_batch = src_raw_num_dataset[perm[i:i + batchsize]]
-            src_raw_sym_batch = src_raw_sym_dataset[perm[i:i + batchsize]]
-
-            # Target batch
-            trg_batch = trg_dataset[perm[i:i + batchsize]]
+            src_batch = src_dataset[perm[i:i + batchsize]]
 
             # 各バッチ内のサイズを統一させる
-            src_sym_batch = util.fill_batch(src_sym_batch, src_vocab2id['</s>'])
-            trg_batch = util.fill_batch(trg_batch, trg_vocab2id['</s>'])
+            src_batch = util.fill_batch(src_batch, src_vocab2id['</s>'])
 
             # 損失を計算
             hyp_batch, loss = forward_one_step(model,
-                                               src_num_batch,
-                                               src_sym_batch,
-                                               trg_batch,
+                                               src_batch,
                                                src_vocab2id,
-                                               trg_vocab2id,
                                                args.train,
                                                xp) # is_train
 
-            sum_train_loss  += float(cuda.to_cpu(loss.data)) * len(trg_batch)   # 平均誤差計算用
+            sum_train_loss  += float(cuda.to_cpu(loss.data)) * len(src_batch)   # 平均誤差計算用
 
             loss.backward() # Backpropagation
             optimizer.update() # 重みを更新
 
-            # 学習の途中経過を表示
-            for k in range(len(src_num_batch)):
-                # 辞書を利用して単語列を出力
-                print 'epoch: ', epoch, ', sample:', batchsize * j + k
-                #print 'src_num:', src_num_batch[k]
-                #print 'src_sym:', " ".join( [ src_id2vocab[x] for x in src_sym_batch[k] ])
-
-                print 'raw_src_num:', src_raw_num_batch[k]
-                print 'raw_src_sym:', " ".join( [ src_id2vocab[x] for x in src_raw_sym_batch[k] ])
-                print 'trg:', ' '.join( [trg_id2vocab[x] for x in trg_batch[k]] )
-                print 'hyp:', ' '.join( [trg_id2vocab[x] for x in hyp_batch[k]] )
-                print "================="
-
-            j += 1
-
         print('train mean loss={}'.format(sum_train_loss / N)) #平均誤差
 
+        """
         #モデルの途中経過を保存
         print 'saving model....'
         prefix = './model/' + args.model + '.%03.d' % (epoch + 1)
@@ -311,10 +264,9 @@ def train(args):
         util.save_vocab(prefix + '.trgvocab', trg_id2vocab)
         model.save_spec(prefix + '.spec')
         serializers.save_hdf5(prefix + '.weights', model)
+        """
 
         sys.stdout.flush()
-
-    """
 
 def test(args):
     """ 予測を行うメソッド
