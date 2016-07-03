@@ -209,7 +209,7 @@ def train(args):
     # 学習データの読み込み
     # Source
     print 'loading training data...'
-    src_num_dataset, src_sym_dataset, src_vocab2id, src_id2vocab = util.load_src_data(args.src, vocab_size)
+    src_dataset, src_vocab2id, src_id2vocab = util.load_src_data(args.src, vocab_size)
 
     # debug modeの時, パラメータの確認
     if args.is_debug_mode:
