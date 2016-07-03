@@ -146,10 +146,10 @@ def forward_one_step(model,
         loss = Variable(xp.asarray(xp.zeros(()), dtype=xp.float32))
         src_batch = xp.asarray(src_batch, dtype=xp.int32).T # 転置
 
-        print src_batch
-        for batch in src_batch:
-            x = Variable(batch) #source
-            t = Variable(batch) #target
+        for s_batch, t_batch in zip(src_batch, src_batch[1:]):
+
+            x = Variable(s_batch) #source
+            t = Variable(t_batch) #target
 
             y = model(x)
 
