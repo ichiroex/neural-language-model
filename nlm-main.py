@@ -14,8 +14,8 @@ from gensim import corpora, matutils
 from gensim.models import word2vec
 import time
 import math
-from net import EncoderDecoder
-import mytools
+from net import NLM
+import util
 import nltk.translate.bleu_score
 
 """
@@ -48,18 +48,10 @@ def argument_parser():
     def_test = False
     def_gpu = False
     def_is_debug_mode = False
-    def_src = "./dataset/weather_src.train"
-    def_trg = "./dataset/weather_trg.train"
+    def_src = ""
     def_model = "encdec"
 
-    # Encoder parameter
-    def_input_channel = 1
-    def_output_channel = 100
-    def_filter_height = 11
-    def_filter_width = 3
-    def_mid_units = 500
-
-    #Decoder parameter
+    # Model parameter
     def_vocab = 1000
     def_embed = 100
     def_hidden = 200
@@ -74,11 +66,7 @@ def argument_parser():
     parser.add_argument('src',
                         type=str,
                         default=def_src,
-                        help='source file')
-    parser.add_argument('trg',
-                        type=str,
-                        default=def_trg,
-                        help='target file')
+                        help='input file')
     parser.add_argument('--train',
                         dest="train",
                         action="store_true",
@@ -105,31 +93,6 @@ def argument_parser():
                         type=str,
                         default=def_model,
                         help='model file name to save')
-    parser.add_argument('--ich',
-                        dest='input_channel',
-                        type=int,
-                        default=def_input_channel,
-                        help='number of input channel')
-    parser.add_argument('--och',
-                        dest='output_channel',
-                        type=int,
-                        default=def_output_channel,
-                        help='number of output channel')
-    parser.add_argument('--fheight',
-                        dest='filter_height',
-                        type=int,
-                        default=def_filter_height,
-                        help='size of filter height')
-    parser.add_argument('--fwidth',
-                        dest='filter_width',
-                        type=int,
-                        default=def_filter_width,
-                        help='size of filter width')
-    parser.add_argument('--munits ',
-                        dest='mid_units',
-                        type=int,
-                        default=def_mid_units,
-                        help='size of mid units')
     parser.add_argument('--vocab ',
                         dest='vocab',
                         type=int,
@@ -236,11 +199,6 @@ def train(args):
     """
 
     # オプションの値をメソッド内の変数に渡す
-    input_channel = args.input_channel   # inputチャネル数
-    output_channel = args.output_channel # outputチャネル数
-    filter_height = args.filter_height # filterの高さ
-    filter_width = args.filter_width   # filterの幅
-    mid_units = args.mid_units    # 中間層のユニット数
     vocab_size  = args.vocab      # 語彙数
     embed_size  = args.embed      # embeddingの次元数
     hidden_size = args.hidden     # 隠れ層のユニット数
@@ -250,57 +208,25 @@ def train(args):
 
     # 学習データの読み込み
     # Source
-    print 'loading source text...'
-    src_num_dataset, src_sym_dataset, src_vocab2id, src_id2vocab = mytools.load_src_data(args.src, vocab_size)
-
-    # 正規化前のSourceファイル
-    src_raw_num_dataset, src_raw_sym_dataset, _, _ = mytools.load_src_data(args.src + ".raw", vocab_size)
-
-    # Target
-    print 'loading target text...'
-    trg_dataset, trg_vocab2id, trg_id2vocab = mytools.load_trg_data(args.trg, vocab_size)
-
-    # 数値データセットの次元 (サンプル数, 数値ベクトルの種類数, 数値ベクトルの次元)
-    sample_size, height, width = src_num_dataset.shape
-
-    # CNNの入力用に変換
-    # (sample size, # of channel, height, width) の4次元テンソルに変換
-    src_num_dataset = src_num_dataset.reshape(sample_size,
-                                              input_channel,
-                                              height,
-                                              width)
+    print 'loading training data...'
+    src_num_dataset, src_sym_dataset, src_vocab2id, src_id2vocab = util.load_src_data(args.src, vocab_size)
 
     # debug modeの時, パラメータの確認
     if args.is_debug_mode:
         print "[PARAMETERS]"
-        print 'input channel:', input_channel
-        print 'output channel:', output_channel
-        print 'filter height:', filter_height
-        print 'filter width:', filter_width
-        print 'mid units:', mid_units
-
         print 'vocab size:', vocab_size
         print 'embed size:', embed_size
         print 'hidden size:', hidden_size
+
         print 'mini batch size:', batchsize
         print 'epoch:', n_epoch
         print 'grad clip threshold:', grad_clip
         print
         print 'sample size:', sample_size
-        print 'height:', height
-        print 'width:', width
         print
 
     # モデルの定義
-    model = EncoderDecoder(input_channel,
-                           output_channel,
-                           filter_height,
-                           filter_width,
-                           mid_units,
-                           vocab_size,   # 語彙数
-                           embed_size,   # embeddinの次元数
-                           hidden_size,  # 隠れ層のユニット数
-                           args.use_gpu) # GPUを使うかどうか
+    model = NLM(vocab_size, embed_size, hidden_size)
 
     # GPUを使うかどうか
     if args.use_gpu:
@@ -316,6 +242,8 @@ def train(args):
     optimizer.setup(model)
     optimizer.add_hook(chainer.optimizer.GradientClipping(grad_clip))
 
+
+    """
     # 学習の始まり
     for epoch in range(n_epoch):
         print 'epoch:', epoch, '/', n_epoch
@@ -339,8 +267,8 @@ def train(args):
             trg_batch = trg_dataset[perm[i:i + batchsize]]
 
             # 各バッチ内のサイズを統一させる
-            src_sym_batch = mytools.fill_batch(src_sym_batch, src_vocab2id['</s>'])
-            trg_batch = mytools.fill_batch(trg_batch, trg_vocab2id['</s>'])
+            src_sym_batch = util.fill_batch(src_sym_batch, src_vocab2id['</s>'])
+            trg_batch = util.fill_batch(trg_batch, trg_vocab2id['</s>'])
 
             # 損失を計算
             hyp_batch, loss = forward_one_step(model,
@@ -377,12 +305,14 @@ def train(args):
         #モデルの途中経過を保存
         print 'saving model....'
         prefix = './model/' + args.model + '.%03.d' % (epoch + 1)
-        mytools.save_vocab(prefix + '.srcvocab', src_id2vocab)
-        mytools.save_vocab(prefix + '.trgvocab', trg_id2vocab)
+        util.save_vocab(prefix + '.srcvocab', src_id2vocab)
+        util.save_vocab(prefix + '.trgvocab', trg_id2vocab)
         model.save_spec(prefix + '.spec')
         serializers.save_hdf5(prefix + '.weights', model)
 
         sys.stdout.flush()
+
+    """
 
 def test(args):
     """ 予測を行うメソッド
@@ -392,8 +322,8 @@ def test(args):
     batchsize   = args.batchsize  # バッチサイズ
 
     # 語彙辞書の読込
-    src_vocab2id, src_id2vocab, vocab_size = mytools.load_vocab(args.model + ".srcvocab")
-    trg_vocab2id, trg_id2vocab, vocab_size = mytools.load_vocab(args.model + ".trgvocab")
+    src_vocab2id, src_id2vocab, vocab_size = util.load_vocab(args.model + ".srcvocab")
+    trg_vocab2id, trg_id2vocab, vocab_size = util.load_vocab(args.model + ".trgvocab")
 
     # モデルの読込
     model = EncoderDecoder.load_spec(args.model + ".spec", args.use_gpu)
@@ -410,13 +340,13 @@ def test(args):
     # Source sequence for test
     print 'loading source numeric and symbolic data for test...'
     # 数値データ, シンボルデータ
-    test_src_num_dataset, test_src_sym_dataset = mytools.load_test_src_data(args.src, src_vocab2id)
+    test_src_num_dataset, test_src_sym_dataset = util.load_test_src_data(args.src, src_vocab2id)
 
     # 正規化前のsrcファイル(出力用に読込)
-    test_raw_src_num_dataset, test_raw_src_sym_dataset = mytools.load_test_src_data(args.src + ".raw", src_vocab2id)
+    test_raw_src_num_dataset, test_raw_src_sym_dataset = util.load_test_src_data(args.src + ".raw", src_vocab2id)
 
     # テスト時の正解データ
-    test_trg_dataset = mytools.load_test_trg_data(args.trg)
+    test_trg_dataset = util.load_test_trg_data(args.trg)
 
     # 数値データセットの次元 (サンプル数, 数値ベクトルの種類数, 数値ベクトルの次元)
     sample_size, height, width = test_src_num_dataset.shape
@@ -449,7 +379,7 @@ def test(args):
         trg_batch = test_trg_dataset[i:i+batchsize]
 
         # 各バッチのサイズを統一させる
-        src_sym_batch = mytools.fill_batch(src_sym_batch, src_vocab2id['</s>'])
+        src_sym_batch = util.fill_batch(src_sym_batch, src_vocab2id['</s>'])
 
         K = len(src_num_batch)
         print 'sample %8d - %8d ...' % (generated + 1, generated + K)
@@ -489,7 +419,6 @@ def test(args):
 
     print 'BLEU:', np.mean(np.array(bleu_score_list))
     print 'finished.'
-
 
 def main():
     args = argument_parser()
