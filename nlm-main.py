@@ -52,7 +52,7 @@ def argument_parser():
     def_model = "encdec"
 
     # Model parameter
-    def_vocab = 5000
+    def_vocab = 2000
     def_embed = 300
     def_hidden = 200
 
@@ -253,6 +253,15 @@ def train(args):
 
             loss.backward() # Backpropagation
             optimizer.update() # 重みを更新
+
+            k = 0
+            for hyp in hyp_batch:
+                _src = [src_id2vocab[x] for x in src_batch[k]]
+                _hyp = [src_id2vocab[x] if src_id2vocab[x] != "</s>" else "" for x in hyp]
+                print 'src:', ' '.join( _src )
+                print 'hyp:', ' '.join( _hyp )
+                print '=============================================='
+                k += 1
 
         print('train mean loss={}'.format(sum_train_loss / N)) #平均誤差
 
