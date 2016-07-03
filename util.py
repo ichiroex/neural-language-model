@@ -113,7 +113,7 @@ def load_src_data(fname, vocab_size):
 
             # 単語分割
             word_list = line.split()
-            sentence_list.append(word_freq)
+            sentence_list.append(word_list)
 
             # 各シンボルの出現回数を数える
             for word in word_list:
