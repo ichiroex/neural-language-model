@@ -28,3 +28,20 @@ class NLM(Chain):
         h1 = F.tanh(self.l1(e))
         y = self.l2(h1)
         return y
+
+    def save_spec(self, filename):
+        with open(filename, 'w') as fp:
+            # パラメータを保存
+            print(self.vocab_size, file=fp)
+            print(self.embed_size, file=fp)
+            print(self.hidden_size, file=fp)
+
+
+    @staticmethod
+    def load_spec(filenameg):
+        with open(filename) as fp:
+            # specファイルからモデルのパラメータをロード
+            vocab_size = int(next(fp))
+            embed_size = int(next(fp))
+            hidden_size = int(next(fp))
+            return NLM(vocab_size, embed_size, hidden_size)
