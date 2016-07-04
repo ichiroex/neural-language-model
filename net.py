@@ -45,7 +45,7 @@ class NLM(Chain):
 
 
     @staticmethod
-    def load_spec(filenameg):
+    def load_spec(filename):
         with open(filename) as fp:
             # specファイルからモデルのパラメータをロード
             vocab_size = int(next(fp))
