@@ -49,7 +49,7 @@ def argument_parser():
     def_gpu = False
     def_is_debug_mode = False
     def_src = ""
-    def_model = "encdec"
+    def_model = "nlm"
 
     # Model parameter
     def_vocab = 2000
@@ -273,15 +273,13 @@ def train(args):
 
         print('train mean loss={}'.format(sum_train_loss / N)) #平均誤差
 
-        """
+
         #モデルの途中経過を保存
         print 'saving model....'
         prefix = './model/' + args.model + '.%03.d' % (epoch + 1)
         util.save_vocab(prefix + '.srcvocab', src_id2vocab)
-        util.save_vocab(prefix + '.trgvocab', trg_id2vocab)
         model.save_spec(prefix + '.spec')
         serializers.save_hdf5(prefix + '.weights', model)
-        """
 
         sys.stdout.flush()
 
