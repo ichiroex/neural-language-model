@@ -33,6 +33,9 @@ class NLM(Chain):
         y = self.l2(h1)
         return y
 
+    def get_embedding(self, x):
+        return self.embed(x)
+
     def save_spec(self, filename):
         with open(filename, 'w') as fp:
             # パラメータを保存
