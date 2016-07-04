@@ -135,7 +135,6 @@ def forward_one_step(model,
                      xp):
     """ 損失を計算
     """
-    model.zerograds()
     generation_limit = 256
     batch_size = len(src_batch)
 
@@ -245,6 +244,8 @@ def train(args):
 
             # 各バッチ内のサイズを統一させる
             src_batch = util.fill_batch(src_batch, src_vocab2id['</s>'])
+
+            model.zerograds() # 重みを初期化
 
             # 損失を計算
             hyp_batch, loss = forward_one_step(model,
