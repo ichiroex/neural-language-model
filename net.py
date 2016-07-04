@@ -21,6 +21,10 @@ class NLM(Chain):
             l1 = L.Linear(embed_size*2, hidden_size),
             l2 = L.Linear(hidden_size, vocab_size))
 
+        self.vocab_size = vocab_size
+        self.embed_size = embed_size
+        self.hidden_size = hidden_size
+
     def __call__(self, x1, x2):
         e1 = self.embed(x1)
         e2 = self.embed(x2)
