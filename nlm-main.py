@@ -17,6 +17,7 @@ import math
 from net import NLM
 import util
 import nltk.translate.bleu_score
+import scipy.spatial.distance
 
 """
     Code for Neural Machine Translation
@@ -319,9 +320,22 @@ def test(args):
 
 
     # likeのembedding
-    src_embed = embedding_list.data[word_list.index("like")]
+    src_embed = embedding_list.data[word_list.index("people")]
 
-    
+    trg_embed_list = {}
+    for i, word in enumerate(word_list):
+
+        # 比較したい単語のembedding
+        trg_embed = embedding_list.data[i]
+
+        trg_embed_list[word] = 1 - scipy.spatial.distance.cosine(src_embed, trg_embed)
+
+    # 上位10件を表示
+    for i, (word, sim) in enumerate(sorted(trg_embed_list.items(), key=lambda x:x[1], reverse=True)):
+        print word, sim
+
+        if i == 10:
+            break
 
 def main():
     args = argument_parser()
