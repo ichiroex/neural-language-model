@@ -286,15 +286,13 @@ def test(args):
     """ 予測を行うメソッド
     """
 
-    input_channel = args.input_channel # 入力チャネル
     batchsize   = args.batchsize  # バッチサイズ
 
     # 語彙辞書の読込
     src_vocab2id, src_id2vocab, vocab_size = util.load_vocab(args.model + ".srcvocab")
-    trg_vocab2id, trg_id2vocab, vocab_size = util.load_vocab(args.model + ".trgvocab")
 
     # モデルの読込
-    model = EncoderDecoder.load_spec(args.model + ".spec", args.use_gpu)
+    model = NLM.load_spec(args.model + ".spec")
 
     # GPUを使うかどうか
     if args.use_gpu:
@@ -306,48 +304,22 @@ def test(args):
     serializers.load_hdf5(args.model + ".weights", model)
 
     # Source sequence for test
-    print 'loading source numeric and symbolic data for test...'
-    # 数値データ, シンボルデータ
-    test_src_num_dataset, test_src_sym_dataset = util.load_test_src_data(args.src, src_vocab2id)
+    print 'loading source data for test...'
+    # データセット読み込み
+    test_src_dataset = util.load_test_src_data(args.src, src_vocab2id)
 
-    # 正規化前のsrcファイル(出力用に読込)
-    test_raw_src_num_dataset, test_raw_src_sym_dataset = util.load_test_src_data(args.src + ".raw", src_vocab2id)
-
-    # テスト時の正解データ
-    test_trg_dataset = util.load_test_trg_data(args.trg)
-
-    # 数値データセットの次元 (サンプル数, 数値ベクトルの種類数, 数値ベクトルの次元)
-    sample_size, height, width = test_src_num_dataset.shape
-
-    # CNNの入力用に変換
-    # (sample size, # of channel, height, width) の4次元テンソルに変換
-    test_src_num_dataset = test_src_num_dataset.reshape(sample_size,
-                                                      input_channel,
-                                                      height,
-                                                      width)
-
-    print 'generating sequences ...'
     generated = 0
-    N = len(test_src_num_dataset) # テストの事例数
-    weights = [0.25, 0.25, 0.25, 0.25]
-    bleu_score_list = []
+    N = len(test_src_dataset) # テストの事例数
 
+    """
     for i in six.moves.range(0, N, batchsize):
 
         # ミニバッチの作成
         # Source
-        src_num_batch = test_src_num_dataset[i:i+batchsize]
-        src_sym_batch = test_src_sym_dataset[i:i+batchsize]
-
-        # 出力用のSource batch
-        raw_src_num_batch = test_raw_src_num_dataset[i:i+batchsize]
-        raw_src_sym_batch = test_raw_src_sym_dataset[i:i+batchsize]
-
-        # Target
-        trg_batch = test_trg_dataset[i:i+batchsize]
+        src_batch = test_src_dataset[i:i+batchsize]
 
         # 各バッチのサイズを統一させる
-        src_sym_batch = util.fill_batch(src_sym_batch, src_vocab2id['</s>'])
+        src_batch = util.fill_batch(src_sym_batch, src_vocab2id['</s>'])
 
         K = len(src_num_batch)
         print 'sample %8d - %8d ...' % (generated + 1, generated + K)
@@ -361,32 +333,8 @@ def test(args):
                                    trg_vocab2id,
                                    False,
                                    xp) # is_train
-
-        k = 0
-        for hyp in hyp_batch:
-            hyp.append('</s>')
-            hyp = hyp[:hyp.index('</s>')]
-            #print 'src_num:', src_num_batch[k]
-            #print 'src_sym:', ' '.join([ src_id2vocab[x] for li in src_sym_batch[k] for x in li ])
-
-            print 'raw_src_num:', raw_src_num_batch[k]
-            print 'raw_src_sym:', ' '.join([ src_id2vocab[x] for x in raw_src_sym_batch[k] ])
-            _trg = [x for x in trg_batch[k]]
-            _hyp = [trg_id2vocab[x] if trg_id2vocab[x] != "</s>" else "" for x in hyp]
-            bleu_score = nltk.translate.bleu([_trg], _hyp, weights)
-            bleu_score_list.append(bleu_score)
-            print 'trg:', ''.join( _trg )
-            print 'hyp:', ''.join( _hyp )
-            print 'BLEU:', bleu_score
-            print '=============================================='
-            k += 1
-
-        generated += K
-
         sys.stdout.flush()
-
-    print 'BLEU:', np.mean(np.array(bleu_score_list))
-    print 'finished.'
+    """
 
 def main():
     args = argument_parser()
