@@ -273,7 +273,6 @@ def train(args):
 
         print('train mean loss={}'.format(sum_train_loss / N)) #平均誤差
 
-
         #モデルの途中経過を保存
         print 'saving model....'
         prefix = './model/' + args.model + '.%03.d' % (epoch + 1)
