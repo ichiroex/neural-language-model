@@ -146,12 +146,13 @@ def forward_one_step(model,
         loss = Variable(xp.asarray(xp.zeros(()), dtype=xp.float32))
         src_batch = xp.asarray(src_batch, dtype=xp.int32).T # 転置
 
-        for s_batch, t_batch in zip(src_batch, src_batch[1:]):
+        for x1_batch, x2_batch, t_batch in zip(src_batch, src_batch[1:], src_batch[2:]):
 
-            x = Variable(s_batch) #source
+            x1 = Variable(x1_batch) #source
+            x2 = Variable(x2_batch) #source
             t = Variable(t_batch) #target
 
-            y = model(x)
+            y = model(x1, x2)
 
             loss += F.softmax_cross_entropy(y, t)
             output = cuda.to_cpu(y.data.argmax(1))
@@ -221,9 +222,9 @@ def train(args):
 
     N = sample_size
     # Setup optimizer
-    optimizer = optimizers.AdaGrad(lr=0.01)
+    optimizer = optimizers.AdaGrad(lr=0.001)
     optimizer.setup(model)
-    optimizer.add_hook(chainer.optimizer.GradientClipping(grad_clip))
+    #optimizer.add_hook(chainer.optimizer.GradientClipping(grad_clip))
 
 
     # 学習の始まり
@@ -234,6 +235,7 @@ def train(args):
         perm = np.random.permutation(N) #ランダムな整数列リストを取得
         sum_train_loss = 0.0
 
+        j = 0
         for i in six.moves.range(0, N, batchsize):
 
             #perm を使い x_train, y_trainからデータセットを選択 (毎回対象となるデータは異なる)
@@ -254,14 +256,15 @@ def train(args):
             loss.backward() # Backpropagation
             optimizer.update() # 重みを更新
 
-            k = 0
-            for hyp in hyp_batch:
+            for k, hyp in enumerate(hyp_batch):
+                print 'epoch: ', epoch, ', sample:', batchsize * j + k
                 _src = [src_id2vocab[x] if src_id2vocab[x] != "</s>" else "" for x in src_batch[k]]
                 _hyp = [src_id2vocab[x] if src_id2vocab[x] != "</s>" else "" for x in hyp]
                 print 'src:', ' '.join( _src )
                 print 'hyp:', ' '.join( _hyp )
                 print '=============================================='
-                k += 1
+
+            j += 1
 
         print('train mean loss={}'.format(sum_train_loss / N)) #平均誤差
 
