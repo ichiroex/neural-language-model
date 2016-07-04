@@ -135,10 +135,12 @@ def forward_one_step(model,
                      xp):
     """ 損失を計算
     """
+    model.zerograds()
     generation_limit = 256
     batch_size = len(src_batch)
 
     hyp_batch = [[] for _ in range(batch_size)]
+
 
     # Train
     if is_train:
