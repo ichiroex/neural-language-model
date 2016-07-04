@@ -311,30 +311,17 @@ def test(args):
     generated = 0
     N = len(test_src_dataset) # テストの事例数
 
-    """
-    for i in six.moves.range(0, N, batchsize):
+    word_list = src_vocab2id.keys()
 
-        # ミニバッチの作成
-        # Source
-        src_batch = test_src_dataset[i:i+batchsize]
+    # 単語wordのembeddingを取得
+    word_id_list = Variable(xp.asarray([src_vocab2id[word] for word in word_list ], dtype=xp.int32))
+    embedding_list = model.get_embedding(word_id_list)
 
-        # 各バッチのサイズを統一させる
-        src_batch = util.fill_batch(src_sym_batch, src_vocab2id['</s>'])
 
-        K = len(src_num_batch)
-        print 'sample %8d - %8d ...' % (generated + 1, generated + K)
+    # likeのembedding
+    src_embed = embedding_list.data[word_list.index("like")]
 
-        # 損失を計算
-        hyp_batch = forward_one_step(model,
-                                   src_num_batch,
-                                   src_sym_batch,
-                                   None,
-                                   src_vocab2id,
-                                   trg_vocab2id,
-                                   False,
-                                   xp) # is_train
-        sys.stdout.flush()
-    """
+    
 
 def main():
     args = argument_parser()
