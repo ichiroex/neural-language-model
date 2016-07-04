@@ -52,7 +52,7 @@ def argument_parser():
     def_model = "nlm"
 
     # Model parameter
-    def_vocab = 2000
+    def_vocab = 5000
     def_embed = 300
     def_hidden = 200
 
