@@ -9,88 +9,6 @@ from scipy import stats
 自分で作成したTOOLとか
 """
 
-def str_isfloat(str):
-    """
-    strが数値化どうか判定
-    """
-    try:
-        float(str)
-        return True
-
-    except ValueError:
-        return False
-
-def replace_unknown_words(lines, N):
-    """
-        出現回数がN未満の単語を未知語として<unk>に置換する.
-    """
-
-    vocab = {}
-    sentences = []
-    output = []
-
-    # 各単語(key)の出現回数をvalueとする辞書を作成
-    for line in lines:
-        for w in line.split():
-            vocab[w] = vocab.get(w, 0) + 1
-        sentences.append(line.split())
-
-
-    # 頻度N以下の単語は未知語<unk>とする
-    for sen in sentences:
-        tmp = []
-        for word in sen:
-            if vocab[word] < N:
-                tmp.append('<unk>')
-            else:
-                tmp.append(word)
-        output.append(tmp)
-    return output
-
-def standardization(numeric_data_list):
-    """
-    数値データを同系の値ごとに標準化を行う (平均:0, 分散:1)
-    """
-
-    # 転置
-    t_numeric_data_list = np.array(numeric_data_list).T
-
-    numeric_data_list = []
-    for val_list in t_numeric_data_list:
-
-        data_list = np.array([ num for li in val_list for num in li if num != None ]) # 同じ種類のデータリスト
-
-        zscore = stats.zscore(data_list) #　数値データを標準化
-
-        # Noneの部分に0を入れて元の形に戻す
-        i = 0
-        nval_list = []
-        for li in val_list:
-            tmp = []
-            for num in li:
-                if num != None:
-                    tmp.append(zscore[i])
-                    i += 1
-                else:
-                    tmp.append(0)
-            nval_list.append(tmp)
-
-        numeric_data_list.append(nval_list)
-
-
-    return np.array(numeric_data_list).T
-
-
-def padding(data_list):
-
-    """
-    次元数がmax_len以下のrowは0でpadding
-    """
-    max_len = max ( len (data) for data in data_list )
-
-    return [ data + [0] * (max_len - len(data)) for data in data_list]
-
-
 # input data
 def load_src_data(fname, vocab_size):
 
@@ -159,54 +77,29 @@ def load_test_src_data(fname, vocab2id):
 
     print fname
 
-    numeric_data_list = []  # 全事例の数値を格納
-    symbolic_data_list = [] # 全事例のシンボルを格納
-    symbol_freq = defaultdict(lambda: 0) # 各シンボルの出現回数計算用
+    sentence_list = []
 
     with open(fname, "r") as f:
         # ファイルを一行ずつ渡す
         for line in f:
-            numeric_line, symbolic_line = line.split("|")
+            line = line.strip()
 
-            numeric_data = [ [ float(n) if str_isfloat(n) else None for n in ne.split(",")] for ne in numeric_line.split("\t") ]
-            symbolic_data = [ s.strip() for se in symbolic_line.split("\t") for s in se.split(",") ]
+            # 空白の行は無視
+            if len(line) == 0:
+                continue
 
-            # 数値データをリストに格納
-            numeric_data_list.append(numeric_data)
+            # 単語分割
+            word_list = line.split()
+            sentence_list.append(word_list)
 
-            # シンボルデータをリストに格納
-            symbolic_data_list.append(symbolic_data)
 
-    # 数値データセット
-    numeric_dataset = numeric_data_list
-
-    # id化したシンボルデータセット
-    symbolic_dataset = [ [ vocab2id.get(symbol, vocab2id["<unk>"]) for symbol in symbolic_data ] for symbolic_data in symbolic_data_list ]
-
-    print 'dataset size', len(symbolic_dataset)
-    print
-
-    return np.array(numeric_dataset), np.array(symbolic_dataset)
-
-# input data
-def load_test_trg_data(fname):
-
-    """
-    テストデータ用の読み込み用
-    """
-
-    print fname
-    lines = open(fname, 'r').readlines()
-
-    # 文書リストを作成
-    dataset   = [ line.strip().split() for line in lines ]
+    # id化したデータセット
+    dataset = [ [ vocab2id.get(word, vocab2id["<unk>"]) for word in word_list ] for word_list in sentence_list ]
 
     print 'dataset size', len(dataset)
     print
 
     return np.array(dataset)
-
-
 
 # バッチ内の全てのベクトルを同じ次元に揃える
 def fill_batch(batch, token_id):
@@ -243,13 +136,3 @@ def load_vocab(filename):
                 id2vocab[i] = s
 
     return vocab2id, id2vocab, vocab_size
-
-
-if __name__ == '__main__':
-
-    N = 5 # threshold of unknown word
-    lines = open(sys.argv[1], 'r').readlines()
-    output = replace_unknown_words(lines, N)
-
-    for sen in output:
-        print ' '.join(sen)
