@@ -337,6 +337,7 @@ def test(args):
     #print model.embed.W.data.shape
 
     print "src word:", args.src_word
+    print src_embed
     #src_embed = model.embed.W.data[src_vocab2id[args.src_word]]
 
     trg_embed_list = {}
