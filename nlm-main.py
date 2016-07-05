@@ -62,6 +62,8 @@ def argument_parser():
     def_batchsize = 40
     def_grad_clip = 5
 
+    def_src_word = ""
+
     # 引数の設定
     parser = argparse.ArgumentParser()
     parser.add_argument('src',
@@ -125,6 +127,12 @@ def argument_parser():
                         type=int,
                         default=def_grad_clip,
                         help='threshold of gradiation clipping')
+
+    parser.add_argument('--word',
+                        dest='src_word'  ,
+                        type=str,
+                        default=def_src_word,
+                        help='a word that you want to similar words')
 
     return parser.parse_args()
 
@@ -320,7 +328,7 @@ def test(args):
 
 
     # likeのembedding
-    src_embed = embedding_list.data[word_list.index("people")]
+    src_embed = embedding_list.data[word_list.index(args.src_word)]
 
     trg_embed_list = {}
     for i, word in enumerate(word_list):
