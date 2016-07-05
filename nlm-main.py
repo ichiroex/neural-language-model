@@ -244,6 +244,7 @@ def train(args):
         # training
         perm = np.random.permutation(N) #ランダムな整数列リストを取得
         sum_train_loss = 0.0
+        cur_log_perp = xp.zeros(())
 
         j = 0
         for i in six.moves.range(0, N, batchsize):
@@ -262,7 +263,7 @@ def train(args):
                                                src_vocab2id,
                                                args.train,
                                                xp) # is_train
-
+            cur_log_perp += loss.data
             sum_train_loss  += float(cuda.to_cpu(loss.data)) * len(src_batch)   # 平均誤差計算用
 
             loss.backward() # Backpropagation
@@ -281,6 +282,7 @@ def train(args):
             j += 1
 
         print('train mean loss={}'.format(sum_train_loss / N)) #平均誤差
+        print('training perplexity={}'.format(math.exp(float(cur_log_perp) / N))) #perplexity
 
         #モデルの途中経過を保存
         print 'saving model....'
