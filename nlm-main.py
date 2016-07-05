@@ -154,6 +154,8 @@ def forward_one_step(model,
     if is_train:
 
         loss = Variable(xp.asarray(xp.zeros(()), dtype=xp.float32))
+
+        src_batch =  [ [src_vocab2id["<s>"]] + src for src in src_batch]
         src_batch = xp.asarray(src_batch, dtype=xp.int32).T # 転置
 
         for x1_batch, x2_batch, t_batch in zip(src_batch, src_batch[1:], src_batch[2:]):
