@@ -145,6 +145,7 @@ def argument_parser():
 def forward_one_step(model,
                      src_batch,
                      src_vocab2id,
+                     context_window,
                      is_train,
                      xp):
     """ 損失を計算
@@ -163,19 +164,21 @@ def forward_one_step(model,
         src_batch =  [ [src_vocab2id["<s>"]] + src for src in src_batch]
         src_batch = xp.asarray(src_batch, dtype=xp.int32).T # 転置
 
-        for x1_batch, x2_batch, t_batch in zip(src_batch, src_batch[1:], src_batch[2:]):
 
-            x1 = Variable(x1_batch) #source
-            x2 = Variable(x2_batch) #source
+
+        for i, t_batch in enumerate(src_batch[context_window-1:]):
+
+            x_list = [ Variable(x_batch) for x_batch in src_batch[ i:i+context_window-1 ]]
+
             t = Variable(t_batch) #target
-
-            y = model(x1, x2)
+            y = model(x_list)
 
             loss += F.softmax_cross_entropy(y, t)
             output = cuda.to_cpu(y.data.argmax(1))
 
             for k in range(batch_size):
                 hyp_batch[k].append(output[k])
+
 
         return hyp_batch, loss # 予測結果と損失を返す
 
@@ -271,6 +274,7 @@ def train(args):
             hyp_batch, loss = forward_one_step(model,
                                                src_batch,
                                                src_vocab2id,
+                                               context_window,
                                                args.train,
                                                xp) # is_train
             cur_log_perp += loss.data
@@ -292,8 +296,8 @@ def train(args):
             j += 1
 
         # 単語wordのembeddingを取得
-        embedding_list = model.get_embedding(Variable(xp.asarray([src_vocab2id[args.src_word]], dtype=xp.int32)))
-        print args.src_word, embedding_list.data
+        #embedding_list = model.get_embedding(Variable(xp.asarray([src_vocab2id[args.src_word]], dtype=xp.int32)))
+        #print args.src_word, embedding_list.data
 
         print('train mean loss={}'.format(sum_train_loss / N)) #平均誤差
         print('training perplexity={}'.format(math.exp(float(cur_log_perp) / N))) #perplexity
