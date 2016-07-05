@@ -54,8 +54,8 @@ def argument_parser():
 
     # Model parameter
     def_vocab = 5000
-    def_embed = 300
-    def_hidden = 200
+    def_embed = 100
+    def_hidden = 100
 
     # Other parameter
     def_epoch = 10
@@ -282,8 +282,8 @@ def train(args):
             j += 1
 
         # 単語wordのembeddingを取得
-        embedding_list = model.get_embedding(Variable(xp.asarray([src_vocab2id[args.src_word]], dtype=xp.int32)))
-        print args.src_word, embedding_list.data
+        #embedding_list = model.get_embedding(Variable(xp.asarray([src_vocab2id[args.src_word]], dtype=xp.int32)))
+        #print args.src_word, embedding_list.data
 
         print('train mean loss={}'.format(sum_train_loss / N)) #平均誤差
         print('training perplexity={}'.format(math.exp(float(cur_log_perp) / N))) #perplexity
@@ -329,20 +329,18 @@ def test(args):
     word_list = src_vocab2id.keys()
 
     # 単語wordのembeddingを取得
-    word_id_list = Variable(xp.asarray([src_vocab2id[word] for word in word_list ], dtype=xp.int32))
-    embedding_list = model.get_embedding(word_id_list)
+    #word_id_list = Variable(xp.asarray([src_vocab2id[word] for word in word_list ], dtype=xp.int32))
+    #embedding_list = model.get_embedding(word_id_list)
+    #src_embed = embedding_list.data[word_list.index(args.src_word)]
+    #print model.embed.W.data.shape
 
-
-    # likeのembedding
-    src_embed = embedding_list.data[word_list.index(args.src_word)]
+    print "src word:", args.src_word
+    src_embed = model.embed.W.data[src_vocab2id[args.src_word]]
 
     trg_embed_list = {}
-    for i, word in enumerate(word_list):
-
-        # 比較したい単語のembedding
-        trg_embed = embedding_list.data[i]
-
-        trg_embed_list[word] = 1 - scipy.spatial.distance.cosine(src_embed, trg_embed)
+    for _word, _id in src_vocab2id.items():
+        trg_embed = model.embed.W.data[src_vocab2id[_word]]
+        trg_embed_list[_word] = 1 - scipy.spatial.distance.cosine(src_embed, trg_embed)
 
     # 上位10件を表示
     for i, (word, sim) in enumerate(sorted(trg_embed_list.items(), key=lambda x:x[1], reverse=True)):
