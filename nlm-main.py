@@ -50,6 +50,7 @@ def argument_parser():
     def_gpu = False
     def_is_debug_mode = False
     def_src = ""
+    def_context_window = 4
     def_model = "nlm"
 
     # Model parameter
@@ -70,6 +71,10 @@ def argument_parser():
                         type=str,
                         default=def_src,
                         help='input file')
+    parser.add_argument('context_window',
+                        type=int,
+                        default=def_context_window,
+                        help='context window')
     parser.add_argument('--train',
                         dest="train",
                         action="store_true",
@@ -193,12 +198,14 @@ def train(args):
     """
 
     # オプションの値をメソッド内の変数に渡す
+    context_window = args.context_window # 文脈窓
     vocab_size  = args.vocab      # 語彙数
     embed_size  = args.embed      # embeddingの次元数
     hidden_size = args.hidden     # 隠れ層のユニット数
     batchsize   = args.batchsize  # バッチサイズ
     n_epoch     = args.epoch      # エポック数(パラメータ更新回数)
     grad_clip   = args.grad_clip  # gradiation clip
+
 
     # 学習データの読み込み
     # Source
@@ -210,6 +217,7 @@ def train(args):
     # debug modeの時, パラメータの確認
     if args.is_debug_mode:
         print "[PARAMETERS]"
+        print 'context window:', context_window
         print 'vocab size:', vocab_size
         print 'embed size:', embed_size
         print 'hidden size:', hidden_size
@@ -222,7 +230,7 @@ def train(args):
         print
 
     # モデルの定義
-    model = NLM(vocab_size, embed_size, hidden_size)
+    model = NLM(vocab_size, embed_size, hidden_size, context_window)
 
     # GPUを使うかどうか
     if args.use_gpu:
