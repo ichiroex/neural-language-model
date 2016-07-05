@@ -27,10 +27,9 @@ class NLM(Chain):
         self.hidden_size = hidden_size
         self.context_window = context_window
 
-    def __call__(self, x1, x2):
-        e1 = self.embed(x1)
-        e2 = self.embed(x2)
-        e = F.concat((e1, e2))
+    def __call__(self, x_list):
+
+        e = F.concat(tuple([self.embed(x) for x in x_list]))
         h1 = F.tanh(self.l1(e))
         y = self.l2(h1)
         return y
