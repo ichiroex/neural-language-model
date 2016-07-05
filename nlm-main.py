@@ -281,6 +281,10 @@ def train(args):
 
             j += 1
 
+        # 単語wordのembeddingを取得
+        embedding_list = model.get_embedding(Variable(xp.asarray([src_vocab2id[args.src_word]], dtype=xp.int32)))
+        print args.src_word, embedding_list.data
+
         print('train mean loss={}'.format(sum_train_loss / N)) #平均誤差
         print('training perplexity={}'.format(math.exp(float(cur_log_perp) / N))) #perplexity
 
