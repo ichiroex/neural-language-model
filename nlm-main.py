@@ -245,10 +245,8 @@ def train(args):
 
     N = sample_size
     # Setup optimizer
-    optimizer = optimizers.AdaGrad(lr=0.001)
+    optimizer = optimizers.Adam()
     optimizer.setup(model)
-    optimizer.add_hook(chainer.optimizer.GradientClipping(grad_clip))
-
 
     # 学習の始まり
     for epoch in range(n_epoch):
